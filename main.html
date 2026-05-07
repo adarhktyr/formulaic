@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Registration Form</title>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+    background:linear-gradient(135deg,#4facfe,#00f2fe);
+}
+
+/* Background Animation */
+.bg{
+    position:absolute;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+}
+
+.circle{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    animation:float linear infinite;
+}
+
+@keyframes float{
+    0%{
+        transform:translateY(0) rotate(0deg);
+    }
+    50%{
+        transform:translateY(-80px) rotate(180deg);
+    }
+    100%{
+        transform:translateY(0) rotate(360deg);
+    }
+}
+
+/* Form Container */
+.container{
+    position:relative;
+    width:360px;
+    padding:40px;
+    border-radius:20px;
+    background:rgba(255,255,255,0.15);
+    backdrop-filter:blur(12px);
+    box-shadow:0 8px 32px rgba(0,0,0,0.2);
+    color:white;
+    z-index:10;
+    animation:slideUp 1s ease;
+}
+
+@keyframes slideUp{
+    from{
+        opacity:0;
+        transform:translateY(80px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+.container h2{
+    text-align:center;
+    margin-bottom:25px;
+    font-size:30px;
+}
+
+/* Inputs */
+.input-box{
+    margin-bottom:20px;
+}
+
+.input-box input{
+    width:100%;
+    padding:14px;
+    border:none;
+    outline:none;
+    border-radius:12px;
+    font-size:16px;
+    transition:0.3s;
+}
+
+.input-box input:focus{
+    transform:scale(1.03);
+    box-shadow:0 0 15px rgba(255,255,255,0.6);
+}
+
+/* Button */
+.btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:white;
+    color:#0077ff;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.btn:hover{
+    transform:translateY(-3px);
+    background:#0077ff;
+    color:white;
+}
+
+.btn:disabled{
+    opacity:0.7;
+}
+
+/* Message */
+.message{
+    margin-top:20px;
+    text-align:center;
+    min-height:20px;
+    font-size:15px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Animated Background -->
+<div class="bg" id="bg"></div>
+
+<!-- Form -->
+<div class="container">
+
+    <h2>Register</h2>
+
+    <form id="registerForm">
+
+        <div class="input-box">
+            <input type="text" id="name" placeholder="Full Name" required>
+        </div>
+
+        <div class="input-box">
+            <input type="email" id="email" placeholder="Email Address" required>
+        </div>
+
+        <div class="input-box">
+            <input type="password" id="password" placeholder="Password" required>
+        </div>
+
+        <button type="submit" class="btn" id="registerBtn">
+            Register
+        </button>
+
+        <div class="message" id="message"></div>
+
+    </form>
+
+</div>
+
+<script>
+/* ======================================
+   ANIMATED BACKGROUND
+====================================== */
+
+const bg = document.getElementById("bg");
+
+for(let i = 0; i < 15; i++){
+
+    const circle = document.createElement("div");
+
+    circle.classList.add("circle");
+
+    const size = Math.random() * 120 + 40;
+
+    circle.style.width = `${size}px`;
+    circle.style.height = `${size}px`;
+
+    circle.style.left = `${Math.random() * 100}%`;
+    circle.style.top = `${Math.random() * 100}%`;
+
+    circle.style.animationDuration =
+    `${Math.random() * 10 + 8}s`;
+
+    bg.appendChild(circle);
+}
+
+/* ======================================
+   SUPABASE CONFIG
+====================================== */
+
+const SUPABASE_URL =
+"https://bcyjuwgqyzitsevsqgzb.supabase.co";
+
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjeWp1d2dxeXppdHNldnNxZ3piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjA4MDIsImV4cCI6MjA5MzY5NjgwMn0.7HoDkr9ik7LXLKifcXOGxWrbsJSoAPX3y4iGmHifKrQ";
+
+const supabaseClient =
+supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+/* ======================================
+   REGISTER USER INTO DATABASE ONLY
+====================================== */
+
+const form = document.getElementById("registerForm");
+
+const button = document.getElementById("registerBtn");
+
+const message = document.getElementById("message");
+
+let loading = false;
+
+form.addEventListener("submit", async (e)=>{
+
+    e.preventDefault();
+
+    if(loading) return;
+
+    loading = true;
+
+    button.disabled = true;
+
+    button.innerText = "Saving...";
+
+    const name =
+    document.getElementById("name").value;
+
+    const email =
+    document.getElementById("email").value;
+
+    const password =
+    document.getElementById("password").value;
+
+    try{
+
+        /* ==========================
+           INSERT INTO DATABASE
+        ========================== */
+
+        const { error } =
+        await supabaseClient
+        .from("users")
+        .insert([
+            {
+                name:name,
+                email:email,
+                password:password
+            }
+        ]);
+
+        if(error){
+
+            message.innerText =
+            error.message;
+
+            message.style.color = "#ffe082";
+
+            button.disabled = false;
+
+            button.innerText = "Register";
+
+            loading = false;
+
+            return;
+        }
+
+        /* ==========================
+           SUCCESS
+        ========================== */
+
+        message.innerText =
+        "Registration Successful 🎉";
+
+        message.style.color = "white";
+
+        button.innerText = "Saved ✔";
+
+        button.style.background = "#00c853";
+
+        button.style.color = "white";
+
+        form.reset();
+
+    }catch(err){
+
+        message.innerText =
+        err.message;
+
+        message.style.color = "#ffe082";
+    }
+
+    loading = false;
+});
+</script>
+
+</body>
+</html>
